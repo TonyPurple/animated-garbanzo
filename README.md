@@ -1,1 +1,1 @@
-Python script to read log file and output recent Cron jobs on Ubuntu
+A few Python scripts I've written while brushing up on Python for Cyber Security.
