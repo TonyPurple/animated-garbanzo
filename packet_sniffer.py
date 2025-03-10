@@ -46,15 +46,19 @@ def parse_packet(raw_packet):
         protocol = iph[6]
         s_addr = socket.inet_ntoa(iph[8])
         d_addr = socket.inet_ntoa(iph[9])
+        # Calculate IP header length and transport layer start position
+        ip_header_length = ihl * 4
+        transport_start = 14 + ip_header_length  # Ethernet(14) + IP header length
 
         print(f"IP Packet:")
-        print(f"Version: {version}, Header Length: {ihl*4} bytes")
+        print(f"Version: {version}, Header Length: {ip_header_length} bytes")
         print(f"TTL: {ttl}, Protocol: {protocol}")
         print(f"Source: {s_addr}, Destination: {d_addr}")
+        print(f"Transport Layer Start: {transport_start}")
 
         # TCP protocol (6)
-        if protocol == 6:
-            tcp_header = raw_packet[34:54]
+        if protocol == 6 and len(raw_packet) >= transport_start + 20:
+            tcp_header = raw_packet[transport_start:transport_start+20]
             tcph = struct.unpack('!HHLLBBHHH', tcp_header)
 
             source_port = tcph[0]
@@ -62,8 +66,20 @@ def parse_packet(raw_packet):
             flags = tcph[5]
 
             print(f"TCP Segment:")
-            print(f"Source Port: {source_port}, Dest Port: {dest_port}")
-            print(f"Flags: {flags:08b}")
+            print(f"TCP Ports: {source_port}->{dest_port} Flags: {flags:08b}")
+
+        elif protocol == 17 and len(raw_packet) >= transport_start + 8:
+            udp_header = raw_packet[transport_start:transport_start+8]
+            udph = struct.unpack('!HHHH', udp_header)
+        
+            source_port = udph[0]
+            dest_port = udph[1]
+            length = udph[2]
+            checksum = udph[3]
+
+            print(f"UDP Datagram:")
+            print(f"UDP Ports: {udph[0]}->{udph[1]} Length: {length} bytes")
+            print(f"Checksum: {checksum}")
 
 def format_mac(bytes_addr):
     return ':'.join(f'{b:02x}' for b in bytes_addr)
